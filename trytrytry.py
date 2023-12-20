@@ -97,3 +97,38 @@ def triangulation(triangle_index, landmark_points, img=None):
     cv2.fillConvexPoly(cropped_triangle_mask, points, 255)
     return points, cropped_triangle, cropped_triangle_mask, rect
 
+def warped_triangle(rect, points1, points2, src_cropped_triangle, dest_cropped_triangle_mask):
+    (x, y, w, h) = rect
+
+    matrix = cv2. getAffineTransform(np.float32(points1), np.float32(points2))
+    warped_triangle = cv2.warpAffine(src_cropped_triangle, matrix, (w, h))
+    warped_triangle = cv2.bitwise_and(warped_triangle, warped_triangle, mask= dest_cropped_triangle_mask)
+
+    return warped_triangle
+
+def add_piece_of_new_face(new_face, rect, warped_triangle):
+    (x, y, w, h) = rect
+    new_face_rect_area = new_face[y:y + h, x:x + w]
+    new_face_rect_area_gray = cv2.cvtColor(new_face_rect_area, cv2.COLOR_BGR2GRAY)
+
+    _, mask_triangles_designed = cv2.threshold(new_face_rect_area_gray, 1, 255, cv2.THRESH_BINARY_INV)
+
+    warped_triangle = cv2.bitwise_and(warped_triangle, warped_triangle, mask= mask_triangles_designed)
+
+    new_face_rect_area = cv2.add(new_face_rect_area, warped_triangle)
+    new_face[y:y + h, x:x + w] = new_face_rect_area
+
+def swap_new_face(dest_image, dest_image_gray, dest_convexHull, new_face):
+    face_mask = np.zeros_like(dest_image_gray)
+    head_mask = cv2.fillconvexPoly(face_mask, dest_convexHull, 255)
+    face_mask = cv2.bitwise_not(head_mask)
+
+    head_without_face = cv2.bitwise_and(dest_image, dest_image, mask= face_mask)
+
+    result = cv2.add(head_without_face, new_face)
+
+    (x, y, w, h) = cv2.boundingRect(dest_convexHull)
+    center_face = (int((x + x + w) / 2), int((y + y + h) / 2))
+
+    return cv2.seamlessClone(result, dest_image, head_mask, center_face, cv2.MIXED_CLONE)
+
