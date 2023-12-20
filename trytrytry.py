@@ -151,3 +151,62 @@ def set_src_image(image):
     
 
 set_src_image(image)
+
+
+while True:
+    global src_image, src_image_gray, src_mask, src_landmark_points, src_np_points, src_convexHull, indexes_triangles
+
+    _, dest_image = cap.read()
+    dest_image = cv2.resize(dest_image, (width, height))
+
+    dest_image_gray = cv2.cvtColor(dest_image, cv2.COLOR_BGR2GRAY)
+    dest_mask = np.zeros_like(dest_image_gray)
+
+    dest_landmark_points = get_landmark_position(dest_image)
+    if dest_landmark_points is None:
+        continue
+
+    dest_np_points = np.array(dest_landmark_points)
+    dest_convexHull = cv2.convexHull(dest_np_points)
+
+    height, width, channels = dest_image.shape
+    new_face = np.zeros((height, width, channels), np.uint8)
+
+    for triangle_index in indexes_triangles:
+
+        points, src_cropped_triangle, cropped_triangle_mask, _ = triangulation(
+            triangle_index= triangle_index,
+            landmark_points= src_landmark_points,
+            img= src_image
+        )
+
+        points2, _, dest_cropped_triangle_mask, rect = triangulation(
+            triangle_index= triangle_index,
+            landmark_points= dest_landmark_points
+        )
+
+        warped_triangle = warp_triangle(rect=rect, points1= points, points2= points2, 
+                                        src_cropped_triangle= src_cropped_triangle,
+                                        dest_cropped_triangle_mask= dest_cropped_triangle_mask)
+        
+        add_piece_of_new_face(new_face= new_face, rect= rect, warped_triangle= warped_triangle)
+        
+    result = swap_new_face(dest_image= dest_image, dest_image_gray= dest_image_gray, 
+                            dest_convexHull= dest_convexHull, new_face= new_face)
+        
+    result = cv2.medianBlur(result, 3)
+    h, w, _= src_image.shape
+    rate = width / w
+
+
+    cv2.imshow("Source image", cv2.resize(src_image,(int(w * rate), int(h * rate))))
+    cv2.imshow("New face", new_face)
+
+    result1.write(result)
+    cv2.imshow("Result", result)
+
+    k = cv2.waitKey(1)
+    if k == ord('q'):
+        break
+
+cv2.destroyAllWindows()
