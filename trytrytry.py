@@ -81,3 +81,19 @@ def triangulation(triangle_index, landmark_points, img=None):
     tr1_pt1 = landmark_points[triangle_index[0]]
     tr1_pt2 = landmark_points[triangle_index[1]]
     tr1_pt3 = landmark_points[triangle_index[2]]
+    
+    rect = cv2.boundingrect(triangle)
+    (x, y, w, h) = rect
+
+    cropped_triangle = None
+    if img is not None:
+        cropped_triangle = img[y:y + h, x:x + w]
+
+    cropped_triangle_mask = np.zeros((h, w), np.uint8)
+    points = np.array([tr1_pt1[0] - x, tr1_pt1[1] - y],
+                     [tr1_pt2[0] - x, tr1_pt2[1] - y],
+                     [tr1_pt3[0] - x, tr1_pt3[1] - y], np.uint32)
+
+    cv2.fillConvexPoly(cropped_triangle_mask, points, 255)
+    return points, cropped_triangle, cropped_triangle_mask, rect
+
