@@ -132,3 +132,22 @@ def swap_new_face(dest_image, dest_image_gray, dest_convexHull, new_face):
 
     return cv2.seamlessClone(result, dest_image, head_mask, center_face, cv2.MIXED_CLONE)
 
+
+def set_src_image(image):
+    global src_image, src_image_gray, src_mask, src_landmark_points, src_np_points, src_convexHull, indexes_triangles
+
+    src_image = image
+    src_image_gray = cv2.cvtColor(src_image, cv2.COLOR_BGR2GRAY)
+    src_mask = np.zeros_like(src_image_gray)
+
+    src_landmark_points = get_landmark_position(src_image)
+    src_np_points = np.array(src_landmark_points)
+    src_convexHull = cv2.convexHull(src_np_points)
+    cv2.fillConvexPoly(src_mask, src_convexHull, 255)
+
+    indexes_triangle = get_triangles(convexhull=src_convexHull,
+                                     landmark_points= src_landmark_points,
+                                     np_points=src_np_points)
+    
+
+set_src_image(image)
