@@ -17,7 +17,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_face_mesh = mp.solutions.face_mesh
 
-def get_landmark_posistion(src_image):
+def get_landmark_position(src_image):
     with mp_face_mesh.FaceMesh(
             static_image_mode= True,
             max_num_faces= 1,
